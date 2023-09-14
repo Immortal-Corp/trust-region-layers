@@ -13,8 +13,8 @@ find_library(lapack REQUIRED)
 add_subdirectory(pybind11)
 
 #Adapt these so that armadillo and nlopt are found
-include_directories(<path_to_armadillo>/include <path_to_nlopt>/include)
-link_directories(<path_to_nlopt>/lib)
+include_directories(~/masterthesis/trust_region_layers/armadillo-code-9.900.x/include ~/install/include)
+link_directories(~/install/lib)
 ### END OF STUFF THE NEEDS TO BE CHANGED ##################################
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")

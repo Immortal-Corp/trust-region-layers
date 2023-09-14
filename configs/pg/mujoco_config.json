@@ -1,6 +1,6 @@
 {
   "exp_name": "",
-  "game": "HalfCheetah-v2",
+  "game": "HalfCheetah-v4",
   "n_envs": 1,
   "n_test_envs": 5,
   "rollout_steps": 2048,

@@ -20,6 +20,8 @@ from typing import Sequence, Tuple
 import torch as ch
 import torch.nn as nn
 
+from copy import deepcopy
+
 from trust_region_projections.models.value.vf_net import VFNet
 from trust_region_projections.utils.network_utils import (
     get_activation,
@@ -357,20 +359,4 @@ class AbstractGaussianPolicy(nn.Module, ABC):
         Returns:
             A new instance with the same parameters and state.
         """
-        copied_policy = GaussianPolicyDiag(
-            obs_dim=self.obs_dim,
-            action_dim=self.action_dim,
-            init=self.init,
-            hidden_sizes=self.hidden_sizes,
-            activation=self.activation,
-            contextual_std=self.contextual_std,
-            init_std=self.init_std.item(),  # Convert tensor to a scalar
-            minimal_std=self.minimal_std,
-            share_weights=self.share_weights,
-            vf_model=self.vf_model,
-        )
-
-        # Copy the state (model weights) from the current instance to the new instance
-        copied_policy.load_state_dict(self.state_dict())
-
-        return copied_policy
+        return deepcopy(self)

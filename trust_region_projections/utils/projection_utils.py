@@ -265,3 +265,20 @@ def get_entropy_schedule(schedule_type, total_train_steps, dim):
                 initial_entropy - dim * target_entropy) * temperature ** (10 * step / total_train_steps)
     else:
         return lambda initial_entropy, target_entropy, temperature, step: initial_entropy.new([-np.inf])
+    
+
+def get_cov_schedule(schedule_type, total_train_steps, update_interval):
+    """
+    return entropy schedule callable with interface f(old_entropy, initial_entropy_bound, train_step)
+    Args:
+        schedule_type: which type of entropy schedule to use, one of [None, 'linear', or 'exp'].
+        total_train_steps: total number of training steps to compute appropriate decay over time.
+        dim: number of action dimensions to scale exp decay correctly.
+
+    Returns:
+        f(initial_entropy, target_entropy, temperature, step)
+    """
+    if schedule_type == "exp":
+        return lambda initial_cov, factor, step: initial_cov * (factor ** (step // update_interval))
+    else:
+        return lambda initial_cov, factor, step: initial_cov

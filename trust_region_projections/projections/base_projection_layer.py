@@ -135,6 +135,7 @@ class BaseProjectionLayer(object):
         cov_schedule: str = None,
         cov_factor: float = 1.0,
         update_interval: int = 1,
+        target_metric: float = 0.0,
         trust_region_coeff: float = 0.0,
         scale_prec: bool = True,
         entropy_schedule: Union[None, str] = None,
@@ -178,10 +179,11 @@ class BaseProjectionLayer(object):
         # projection and bounds
         self.proj_type = proj_type
         self.mean_bound = tensorize(mean_bound, cpu=cpu, dtype=dtype)
-        self.initial_cov_bound = tensorize(cov_bound, cpu=cpu, dtype=dtype)
+        self.cov_bound = tensorize(cov_bound, cpu=cpu, dtype=dtype)
         self.cov_schedule = get_cov_schedule(
-            cov_schedule, total_train_steps, update_interval
+            cov_schedule, total_train_steps, update_interval, target_metric
         )
+        self.step = -1
         self.cov_factor = cov_factor
         self.trust_region_coeff = trust_region_coeff
         self.scale_prec = scale_prec
@@ -207,15 +209,19 @@ class BaseProjectionLayer(object):
         self.optimizer_type_reg = optimizer_type_reg
 
     def __call__(
-        self, policy, p: Tuple[ch.Tensor, ch.Tensor], q, step, *args, **kwargs
+        self, policy, p: Tuple[ch.Tensor, ch.Tensor], q, step, metric=0, *args, **kwargs
     ):
         # entropy_bound = self.policy.entropy(q) - self.target_entropy
         entropy_bound = self.entropy_schedule(
             self.initial_entropy, self.target_entropy, self.temperature, step
         ) * p[0].new_ones(p[0].shape[0])
-        cov_bound = self.cov_schedule(self.initial_cov_bound, self.cov_factor, step)
+        if self.step != step:
+            self.cov_bound = self.cov_schedule(
+                self.cov_bound, self.cov_factor, step, metric
+            )
+            self.step = step
         return self._projection(
-            policy, p, q, self.mean_bound, cov_bound, entropy_bound, **kwargs
+            policy, p, q, self.mean_bound, self.cov_bound, entropy_bound, **kwargs
         )
 
     def _trust_region_projection(

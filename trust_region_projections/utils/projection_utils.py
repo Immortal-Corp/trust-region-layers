@@ -309,21 +309,21 @@ def get_entropy_schedule(schedule_type, total_train_steps, dim):
 
 
 def get_cov_schedule(
-    schedule_type, total_train_steps, update_interval, target_metric=0.0
+    schedule_type, total_train_steps, update_interval, initial_cov, target_metric=0.0
 ):
     """
-    return entropy schedule callable with interface f(old_entropy, initial_entropy_bound, train_step)
+    return covariance schedule callable with interface f(old_covariance, initial_covariance_bound, train_step)
     Args:
         schedule_type: which type of entropy schedule to use, one of [None, 'linear', or 'exp'].
         total_train_steps: total number of training steps to compute appropriate decay over time.
         dim: number of action dimensions to scale exp decay correctly.
 
     Returns:
-        f(initial_entropy, target_entropy, temperature, step)
+        f(initial_covariance, target_covariance, temperature, step)
     """
     if schedule_type == "exp":
         return (
-            lambda cov_bound, factor, step, metric=0: cov_bound * factor
+            lambda cov_bound, factor, step, metric=0.0: cov_bound * factor
             if step % update_interval == 0
             else cov_bound
         )
@@ -337,5 +337,46 @@ def get_cov_schedule(
             if step % update_interval == 0
             else cov_bound
         )
+    elif schedule_type == "cosine":
+        return lambda cov_bound, factor, step, metric: target_metric + 0.5 * (
+            initial_cov - target_metric
+        ) * (1 + np.cos(step / total_train_steps * np.pi))
     else:
-        return lambda initial_cov, factor, step, metric: initial_cov
+        return lambda cov_bound, factor, step, metric=0.0: cov_bound
+
+
+def get_mean_schedule(
+    schedule_type, total_train_steps, update_interval, initial_mean, target_metric=0.0
+):
+    """
+    return mean schedule callable with interface f(old_mean, initial_mean_bound, train_step)
+    Args:
+        schedule_type: which type of entropy schedule to use, one of [None, 'linear', or 'exp'].
+        total_train_steps: total number of training steps to compute appropriate decay over time.
+        dim: number of action dimensions to scale exp decay correctly.
+
+    Returns:
+        f(initial_mean, target_mean, temperature, step)
+    """
+    if schedule_type == "exp":
+        return (
+            lambda mean_bound, factor, step, metric=0.0: mean_bound * factor
+            if step % update_interval == 0
+            else mean_bound
+        )
+    elif schedule_type == "adaptive":
+        return (
+            lambda mean_bound, factor, step, metric=0.0: (
+                mean_bound * factor
+                if metric > target_metric
+                else mean_bound * (1 / factor)
+            )
+            if step % update_interval == 0
+            else mean_bound
+        )
+    elif schedule_type == "cosine":
+        return lambda mean_bound, factor, step, metric: target_metric + 0.5 * (
+            initial_mean - target_metric
+        ) * (1 + np.cos(step / total_train_steps * np.pi))
+    else:
+        return lambda mean_bound, factor, step, metric: mean_bound

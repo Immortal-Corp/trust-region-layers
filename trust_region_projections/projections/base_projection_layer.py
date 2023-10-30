@@ -27,6 +27,7 @@ from trust_region_projections.utils.projection_utils import (
     gaussian_kl,
     get_entropy_schedule,
     get_cov_schedule,
+    get_mean_schedule,
 )
 from trust_region_projections.utils.torch_utils import (
     generate_minibatches,
@@ -131,11 +132,14 @@ class BaseProjectionLayer(object):
         self,
         proj_type: str = "",
         mean_bound: float = 0.03,
+        mean_schedule: str = None,
+        mean_factor: float = 1.0,
+        mean_target_metric: float = 0.0,
         cov_bound: float = 1e-3,
         cov_schedule: str = None,
         cov_factor: float = 1.0,
         update_interval: int = 1,
-        target_metric: float = 0.0,
+        cov_target_metric: float = 0.0,
         trust_region_coeff: float = 0.0,
         scale_prec: bool = True,
         entropy_schedule: Union[None, str] = None,
@@ -179,12 +183,24 @@ class BaseProjectionLayer(object):
         # projection and bounds
         self.proj_type = proj_type
         self.mean_bound = tensorize(mean_bound, cpu=cpu, dtype=dtype)
+        self.mean_schedule = get_mean_schedule(
+            mean_schedule,
+            total_train_steps,
+            update_interval,
+            self.mean_bound,
+            mean_target_metric,
+        )
         self.cov_bound = tensorize(cov_bound, cpu=cpu, dtype=dtype)
         self.cov_schedule = get_cov_schedule(
-            cov_schedule, total_train_steps, update_interval, target_metric
+            cov_schedule,
+            total_train_steps,
+            update_interval,
+            self.cov_bound,
+            cov_target_metric,
         )
         self.step = -1
         self.cov_factor = cov_factor
+        self.mean_factor = mean_factor
         self.trust_region_coeff = trust_region_coeff
         self.scale_prec = scale_prec
 
@@ -218,6 +234,9 @@ class BaseProjectionLayer(object):
         if self.step != step:
             self.cov_bound = self.cov_schedule(
                 self.cov_bound, self.cov_factor, step, metric
+            )
+            self.mean_bound = self.mean_schedule(
+                self.mean_bound, self.mean_factor, step, metric
             )
             self.step = step
         return self._projection(

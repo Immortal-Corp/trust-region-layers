@@ -341,6 +341,10 @@ def get_cov_schedule(
         return lambda cov_bound, factor, step, metric: target_metric + 0.5 * (
             initial_cov - target_metric
         ) * (1 + np.cos(step / total_train_steps * np.pi))
+    elif schedule_type == "linear":
+        return lambda cov_bound, step, factor=0.0, metric=0.0: initial_cov + (
+            step / total_train_steps
+        ) * (initial_cov - target_metric)
     else:
         return lambda cov_bound, factor, step, metric=0.0: cov_bound
 
@@ -378,5 +382,9 @@ def get_mean_schedule(
         return lambda mean_bound, factor, step, metric: target_metric + 0.5 * (
             initial_mean - target_metric
         ) * (1 + np.cos(step / total_train_steps * np.pi))
+    elif schedule_type == "linear":
+        return lambda mean_bound, step, factor=0.0, metric=0.0: initial_mean + (
+            step / total_train_steps
+        ) * (initial_mean - target_metric)
     else:
         return lambda mean_bound, factor, step, metric: mean_bound

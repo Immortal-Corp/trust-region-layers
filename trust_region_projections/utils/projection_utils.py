@@ -323,13 +323,13 @@ def get_cov_schedule(
     """
     if schedule_type == "exp":
         return (
-            lambda cov_bound, factor, step, metric=0.0: cov_bound * factor
+            lambda cov_bound, step, factor, metric=0.0: cov_bound * factor
             if step % update_interval == 0
             else cov_bound
         )
     elif schedule_type == "adaptive":
         return (
-            lambda cov_bound, factor, step, metric=0.0: (
+            lambda cov_bound, step, factor, metric=0.0: (
                 cov_bound * factor
                 if metric > target_metric
                 else cov_bound * (1 / factor)
@@ -338,15 +338,15 @@ def get_cov_schedule(
             else cov_bound
         )
     elif schedule_type == "cosine":
-        return lambda cov_bound, factor, step, metric: target_metric + 0.5 * (
+        return lambda cov_bound, step, factor, metric: target_metric + 0.5 * (
             initial_cov - target_metric
         ) * (1 + np.cos(step / total_train_steps * np.pi))
     elif schedule_type == "linear":
-        return lambda cov_bound, step, factor=0.0, metric=0.0: initial_cov + (
+        return lambda cov_bound, step, factor=0.0, metric=0.0: initial_cov - (
             step / total_train_steps
         ) * (initial_cov - target_metric)
     else:
-        return lambda cov_bound, factor, step, metric=0.0: cov_bound
+        return lambda cov_bound, step, factor, metric=0.0: cov_bound
 
 
 def get_mean_schedule(
@@ -364,13 +364,13 @@ def get_mean_schedule(
     """
     if schedule_type == "exp":
         return (
-            lambda mean_bound, factor, step, metric=0.0: mean_bound * factor
+            lambda mean_bound, step, factor, metric=0.0: mean_bound * factor
             if step % update_interval == 0
             else mean_bound
         )
     elif schedule_type == "adaptive":
         return (
-            lambda mean_bound, factor, step, metric=0.0: (
+            lambda mean_bound, step, factor, metric=0.0: (
                 mean_bound * factor
                 if metric > target_metric
                 else mean_bound * (1 / factor)
@@ -379,12 +379,12 @@ def get_mean_schedule(
             else mean_bound
         )
     elif schedule_type == "cosine":
-        return lambda mean_bound, factor, step, metric: target_metric + 0.5 * (
+        return lambda mean_bound, step, factor, metric: target_metric + 0.5 * (
             initial_mean - target_metric
         ) * (1 + np.cos(step / total_train_steps * np.pi))
     elif schedule_type == "linear":
-        return lambda mean_bound, step, factor=0.0, metric=0.0: initial_mean + (
+        return lambda mean_bound, step, factor=0.0, metric=0.0: initial_mean - (
             step / total_train_steps
         ) * (initial_mean - target_metric)
     else:
-        return lambda mean_bound, factor, step, metric: mean_bound
+        return lambda mean_bound, step, factor, metric: mean_bound

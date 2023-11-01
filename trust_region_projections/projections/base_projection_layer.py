@@ -233,10 +233,10 @@ class BaseProjectionLayer(object):
         ) * p[0].new_ones(p[0].shape[0])
         if self.step != step:
             self.cov_bound = self.cov_schedule(
-                self.cov_bound, self.cov_factor, step, metric
+                self.cov_bound, step, self.cov_factor, metric
             )
             self.mean_bound = self.mean_schedule(
-                self.mean_bound, self.mean_factor, step, metric
+                self.mean_bound, step, self.mean_factor, metric
             )
             self.step = step
         return self._projection(
